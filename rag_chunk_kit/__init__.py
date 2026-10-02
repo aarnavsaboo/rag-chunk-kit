@@ -1,44 +1,7 @@
-from dataclasses import dataclass, asdict
-import re
+"""Inspectable retrieval pipelines for local document collections."""
+from .chunking import Chunk, chunk_markdown
+from .retrieval import Hit, SearchIndex, SentenceTransformerEmbedder
+from .pipeline import Context, build_context, evaluate, ingest
 
-
-@dataclass
-class Chunk:
-    index: int
-    heading: str | None
-    text: str
-
-    def as_dict(self):
-        return asdict(self)
-
-
-def chunk_markdown(text: str, max_chars: int = 1200) -> list[Chunk]:
-    heading = None
-    buffer: list[str] = []
-    chunks: list[Chunk] = []
-
-    def flush():
-        nonlocal buffer
-        body = "\n\n".join(buffer).strip()
-        if body:
-            chunks.append(Chunk(len(chunks), heading, body))
-        buffer = []
-
-    for block in re.split(r"\n\s*\n", text):
-        block = block.strip()
-        if not block:
-            continue
-
-        if block.startswith("#"):
-            flush()
-            heading = block.lstrip("#").strip()
-            continue
-
-        candidate = "\n\n".join(buffer + [block])
-        if buffer and len(candidate) > max_chars:
-            flush()
-
-        buffer.append(block)
-
-    flush()
-    return chunks
+__all__ = ["Chunk", "chunk_markdown", "Hit", "SearchIndex", "SentenceTransformerEmbedder",
+           "Context", "build_context", "evaluate", "ingest"]

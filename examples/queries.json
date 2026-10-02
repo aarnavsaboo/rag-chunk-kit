@@ -1,0 +1,20 @@
+[
+  {
+    "query": "BM25 frequency document length",
+    "relevant_sources": [
+      "retrieval.md"
+    ]
+  },
+  {
+    "query": "overlap chunk window boundaries",
+    "relevant_sources": [
+      "chunking.md"
+    ]
+  },
+  {
+    "query": "labelled query evaluation recall",
+    "relevant_sources": [
+      "evaluation.md"
+    ]
+  }
+]
