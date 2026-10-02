@@ -1,0 +1,14 @@
+[project]
+name = "rag-chunk-kit"
+version = "0.1.0"
+description = "A simple Markdown/text chunker for small RAG pipelines."
+authors = [{name = "Aarnav Saboo"}]
+requires-python = ">=3.10"
+license = {text = "MIT"}
+
+[project.scripts]
+rag-chunk = "rag_chunk_kit.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
