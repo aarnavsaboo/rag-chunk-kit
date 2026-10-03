@@ -1,20 +1,10 @@
 [
   {
-    "query": "BM25 frequency document length",
-    "relevant_sources": [
-      "retrieval.md"
-    ]
+    "query":"How does chunk overlap affect retrieval?",
+    "relevant_sources":["retrieval.md"]
   },
   {
-    "query": "overlap chunk window boundaries",
-    "relevant_sources": [
-      "chunking.md"
-    ]
-  },
-  {
-    "query": "labelled query evaluation recall",
-    "relevant_sources": [
-      "evaluation.md"
-    ]
+    "query":"What does reciprocal-rank fusion combine?",
+    "relevant_sources":["retrieval.md"]
   }
 ]

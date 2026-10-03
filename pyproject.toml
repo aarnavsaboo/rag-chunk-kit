@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rag-chunk-kit"
-version = "0.2.0"
-description = "Inspectable document ingestion, hybrid retrieval and evaluation for RAG experiments."
+version = "0.3.0"
+description = "Local document ingestion, hybrid retrieval and RAG experiment tooling."
 requires-python = ">=3.10"
 authors = [{name = "Aarnav Saboo"}]
 license = {text = "MIT"}
@@ -17,9 +17,7 @@ embeddings = ["sentence-transformers>=3,<6"]
 [project.scripts]
 rag-kit = "rag_chunk_kit.cli:main"
 rag-chunk = "rag_chunk_kit.cli:legacy_main"
+rag-experiment = "rag_chunk_kit.experiment_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["rag_chunk_kit*"]
-
-[project.urls]
-Repository = "https://github.com/aarnavsaboo/rag-chunk-kit"

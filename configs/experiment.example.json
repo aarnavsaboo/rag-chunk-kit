@@ -1,0 +1,9 @@
+{
+  "name":"chunk-sweep",
+  "corpus":"examples/corpus",
+  "cases":"examples/queries.json",
+  "chunk_chars":[300,600,1200],
+  "overlap":[0,60,120],
+  "top_k":[3,5,10],
+  "embedding_models":[null]
+}

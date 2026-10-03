@@ -1,89 +1,136 @@
 # RAG Chunk Kit
 
-**A local document-to-context pipeline for RAG experiments.**
+A local retrieval workbench for document ingestion, chunking, hybrid search and repeatable RAG experiments.
 
-Chunking is only useful if you can see what it does to retrieval. This project connects Markdown ingestion, source-preserving chunks, BM25, optional dense embeddings, reciprocal-rank fusion and labelled retrieval evaluation in one inspectable pipeline.
+The package keeps retrieval mechanics inspectable: source-preserving chunks, BM25, optional local embeddings, reciprocal-rank fusion, evidence assembly, labelled retrieval metrics and experiment sweeps. It is deliberately smaller than a full RAG framework so individual retrieval decisions remain visible.
 
-Maintained by **Aarnav Saboo**. Python 3.10+, MIT. The lexical pipeline uses only the standard library.
-
-## Run a complete experiment
-
-```bash
-python -m pip install -e .
-rag-kit index examples/corpus -o local-index.json --max-chars 500 --overlap 50
-rag-kit search local-index.json "How does chunk overlap work?" -k 3
-rag-kit context local-index.json "How does chunk overlap work?" --max-chars 1400
-rag-kit evaluate local-index.json examples/queries.json -k 3
-```
-
-No API key or downloaded model is needed for these commands. The sample corpus and labels are deliberately tiny fixtures, not a benchmark of real-world retrieval quality.
-
-## The pipeline
+## Core pipeline
 
 ```text
 Markdown / text
-  -> section detection + bounded overlapping windows
-  -> chunks with stable IDs, headings and character offsets
-  -> BM25 index (+ optional normalized embedding vectors)
-  -> lexical / cosine ranks -> reciprocal-rank fusion
-  -> context budget + numbered source citations
-  -> source-level Recall@k, MRR@k and nDCG@k
+      |
+      v
+section-aware chunking
+      |
+      +--> stable IDs
+      +--> source paths
+      +--> headings
+      +--> exact offsets
+      |
+      v
+BM25 index + optional dense vectors
+      |
+      v
+lexical / dense rankings
+      |
+      v
+reciprocal-rank fusion
+      |
+      v
+evidence assembly
+      |
+      v
+Recall@k / MRR / nDCG
 ```
 
-## Use from Python
+## Quick start
 
-```python
-from rag_chunk_kit import SearchIndex, build_context, ingest
+```bash
+python -m pip install -e .
 
-chunks = ingest("examples/corpus", max_chars=500, overlap=50)
-index = SearchIndex.build(chunks)
-hits = index.search("embedding model dimensions", k=3)
-context = build_context(hits, max_chars=1600)
-print(context.text)
-print(context.citations)
+rag-kit index examples/corpus -o runs/index.json \
+  --max-chars 600 \
+  --overlap 80
+
+rag-kit search runs/index.json \
+  "How does reciprocal-rank fusion combine results?" \
+  -k 5
 ```
 
-`search(..., source="retrieval.md")` applies an exact source filter. Each result keeps its lexical score and optional cosine score separate from its final fusion score. That final score is a rank signal, not a confidence or probability.
-
-## Optional dense retrieval
+Dense retrieval is optional:
 
 ```bash
 python -m pip install -e '.[embeddings]'
+
+rag-kit index examples/corpus \
+  -o runs/dense.json \
+  --embedding-model sentence-transformers/all-MiniLM-L6-v2
 ```
+
+## Local query expansion experiments
+
+The package includes an optional localhost model adapter for generating alternate search queries.
 
 ```python
-from rag_chunk_kit import SentenceTransformerEmbedder, SearchIndex, ingest
+from rag_chunk_kit.local_query import OllamaQueryExpander
 
-# This explicitly loads/downloads the chosen model. Pin a revision for reproducibility.
-encoder = SentenceTransformerEmbedder("sentence-transformers/all-MiniLM-L6-v2")
-index = SearchIndex.build(ingest("examples/corpus"), encoder)
-index.save("local-index.json")
-hits = index.search("how to compare text vectors", embedder=encoder, alpha=0.5)
+expander = OllamaQueryExpander("qwen3:4b")
+queries = expander.expand(
+    "Why can lexical and dense retrieval complement each other?",
+    count=3,
+)
 ```
 
-The CLI accepts `--embedding-model` for `index`, `search`, `context` and `evaluate`. Use the same model for indexing and queries. For a pinned model revision, use the Python API. Querying a saved dense index without an encoder intentionally uses BM25 only.
+Generated rewrites are kept as experiment artifacts rather than silently replacing the original query.
+
+## Retrieval experiment manifests
+
+```json
+{
+  "name": "chunk-sweep",
+  "corpus": "examples/corpus",
+  "cases": "examples/queries.json",
+  "chunk_chars": [300, 600, 1200],
+  "overlap": [0, 60, 120],
+  "top_k": [3, 5, 10],
+  "embedding_models": [null]
+}
+```
+
+Expand and run the matrix:
+
+```bash
+python -m rag_chunk_kit.experiment_cli plan configs/experiment.example.json > runs/plan.jsonl
+python -m rag_chunk_kit.experiment_cli run runs/plan.jsonl --out runs/results.jsonl
+python -m rag_chunk_kit.experiment_cli report runs/results.jsonl
+```
+
+Each run stores the exact configuration, aggregate retrieval metrics and per-query rankings. This makes chunk-size and overlap changes measurable rather than subjective.
 
 ## What is implemented
 
-- ATX heading hierarchies, fenced-code awareness and strict character limits.
-- Overlapping windows with exact Python string offsets and stable chunk identifiers.
-- Recursive `.md` and `.txt` ingestion with relative source paths.
-- BM25 ranking and an optional Sentence Transformers embedding adapter.
-- Cosine ranking and weighted reciprocal-rank fusion, with model/dimension checks.
-- JSON index persistence, source filters and deduplicated context citations.
-- Labelled, source-level retrieval metrics and an offline sample corpus.
+- ATX heading-aware Markdown chunking
+- fenced-code awareness
+- bounded overlapping windows
+- exact character offsets
+- stable chunk IDs
+- recursive Markdown/text ingestion
+- BM25 retrieval
+- optional Sentence Transformers embeddings
+- cosine ranking
+- reciprocal-rank fusion
+- persistent JSON indexes
+- source filtering
+- labelled retrieval evaluation
+- local query expansion experiments
+- config-driven chunk/retrieval sweeps
 
-## Trade-offs
+## What is intentionally not hidden
 
-This is an in-memory reference implementation for small collections, not a distributed vector database. Ranking scans the corpus. Embeddings are stored in the JSON index; no ANN index or reranker is included. The tokenizer is Unicode word matching, not a language-specific morphological analyzer. Chunk budgets count characters, **not model tokens**. Long code blocks can be split across windows. Heading metadata is retained separately from passage text.
+The project does not pretend every additional RAG stage is useful. Dense retrieval may lose to BM25 on a corpus. Query expansion may introduce worse search terms. Larger chunks may increase apparent recall while reducing passage specificity.
 
-The package builds retrieval context; it does not generate an answer or claim to verify factual correctness. Dense retrieval depends on your chosen model. Tests use a deterministic toy encoder rather than downloaded model weights.
+The experiment tooling keeps those outcomes visible.
 
-## Development
+## Repository layout
 
-```bash
-python -m unittest discover -s tests -v
-python examples/quickstart.py
-```
+- `rag_chunk_kit/chunking.py` — document segmentation
+- `rag_chunk_kit/retrieval.py` — lexical/dense retrieval and fusion
+- `rag_chunk_kit/pipeline.py` — ingestion, evidence assembly and metrics
+- `rag_chunk_kit/local_query.py` — optional localhost query expansion
+- `rag_chunk_kit/experiments.py` — run specs and sweep execution
+- `rag_chunk_kit/experiment_report.py` — grouped experiment summaries
+- `docs/` — design and experiment notes
+- `examples/` — tiny offline fixtures
+- `tests/` — deterministic tests
 
-See [architecture and evaluation notes](docs/design.md). The earlier `rag-chunk file.md -o chunks.jsonl` entry point remains available.
+Maintained by **Aarnav Saboo**.
