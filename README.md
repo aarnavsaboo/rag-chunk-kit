@@ -1,8 +1,8 @@
 # RAG Chunk Kit
 
-A local retrieval workbench for document ingestion, chunking, hybrid search and repeatable RAG experiments.
+A modular retrieval experimentation toolkit for document ingestion, chunking, hybrid search and repeatable RAG evaluation.
 
-The package keeps retrieval mechanics inspectable: source-preserving chunks, BM25, optional local embeddings, reciprocal-rank fusion, evidence assembly, labelled retrieval metrics and experiment sweeps. It is deliberately smaller than a full RAG framework so individual retrieval decisions remain visible.
+The package keeps the complete retrieval path inspectable: source-preserving chunks, BM25, optional local embeddings, reciprocal-rank fusion, evidence assembly, labelled retrieval metrics and configuration-driven experiment sweeps. Components remain independently measurable instead of being hidden behind an end-to-end framework.
 
 ## Core pipeline
 
